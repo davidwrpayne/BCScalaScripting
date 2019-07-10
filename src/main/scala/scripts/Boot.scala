@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import com.typesafe.scalalogging.LazyLogging
-import scripts.api.model.{Customer, OrderProduct}
+import scripts.api.model.{BillingAddress, Customer, OrderProduct}
 import scripts.api.{AkkaHttpClient, BigcommerceApi, model}
 
 import scala.concurrent.{Await, ExecutionContext, Future}

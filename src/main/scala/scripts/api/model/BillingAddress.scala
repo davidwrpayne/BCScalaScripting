@@ -1,6 +1,9 @@
 package scripts.api.model
 
+import faker.Base
 import spray.json.{JsObject, JsString, JsValue}
+
+import scala.util.Random
 
 case class BillingAddress(
                            firstName: String,
@@ -37,9 +40,22 @@ case class BillingAddress(
 }
 
 
-object BillingAddress {
+object BillingAddress extends Base {
 
   import faker._
+  def getFakeAddress(): String = {
+    Seq(
+      numerify(fetch[String]("address.street_address")),
+      fetch[String]("name.first_name"),
+      fetch[String]("address.street_suffix")
+    ).mkString(" ")
+  }
+  def getFakeCity(): String = {
+    Seq(
+      numerify(fetch[String]("address.city_prefix")),
+      fetch[String]("name.first_name").concat(fetch[String]("address.city_suffix"))
+    ).mkString(" ")
+  }
 
   def getNextFakeAddress(): BillingAddress = {
     Faker.locale("en")
@@ -48,11 +64,11 @@ object BillingAddress {
       Name.first_name,
       Name.last_name,
       Company.name,
+      getFakeAddress(),
       "",
-      "",
-      "oakland",
-      "california",
-      "94608",
+      getFakeCity(),
+      fetch[String]("address.state"),
+      numerify(fetch[String]("address.postcode")),
       "United States",
       "US",
       PhoneNumber.phone_number,
