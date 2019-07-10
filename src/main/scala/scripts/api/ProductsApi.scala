@@ -5,6 +5,7 @@ import scripts.api.model.Pagination
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 import spray.json.lenses._
+import scripts.api.model.Product
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -19,6 +20,7 @@ trait ProductsApi {
   import spray.json.lenses.JsonLenses._
 
   private val IdLens: Lens[Seq] = "data" / * / "id"
+  private val productsLens: Lens[Seq] = "data" / *
   private val paginationLens: ScalarLens = "meta" / "pagination"
 
   def getProductPage(page: Int): Future[String] = {
@@ -47,6 +49,21 @@ trait ProductsApi {
       y ++ productIds
     }
   }
+
+  def getAllProducts()(implicit ec: ExecutionContext): Future[Seq[Product]] = {
+    for {
+      pageJson <- getApiPage(productsPath, None)
+      page = pageJson.parseJson
+      pagination = page.extract[Pagination](paginationLens)(Pagination.reader)
+      productIds = page.extract[Product](productsLens)(Product.reader)
+      pagesToFetch = if(pagination.currentPage != pagination.totalPages) pagination.currentPage + 1 to pagination.totalPages  else Seq.empty[Int]
+      x = pagesToFetch.map(getProductPage(_).map(_.parseJson.extract[Product](productsLens)(Product.reader)))
+      y <- Future.sequence(x).map(_.flatten)
+    } yield {
+      y ++ productIds
+    }
+  }
+
 
 
   def getProductMetaData()(implicit ec: ExecutionContext): Future[String] = {

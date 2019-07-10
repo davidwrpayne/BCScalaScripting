@@ -9,14 +9,22 @@ import DefaultJsonProtocol._
 import scala.concurrent.{ExecutionContext, Future}
 import spray.json.lenses.JsonLenses._
 
+import scala.util.Random
+
 
 trait OrdersApi {
   this: BigcommerceApi =>
   val ordersApiPath = "/v2/orders"
 
   val idLens = strToField("id")
+
+//  def updateOrderStatus(orderId: Int, status: Int):Future[Unit] = {
+//    put(s"$ordersApiPath/$orderId",update)
+//  }
+
   /**
     * returns id of order created
+    *
     * @return
     */
   def createOrder(customerDetails: Option[Customer], orderProducts: OrderProduct)(implicit ec: ExecutionContext): Future[Int]= {
@@ -26,17 +34,19 @@ trait OrdersApi {
     for {
       orderResponse <- post(ordersApiPath, newOrder.toString)
       orderId = orderResponse.extract[Int](idLens)
+//      _ <- updateOrderStatus(orderId, Random.nextInt(14)+1)
     } yield {
       orderId
     }
   }
 
-  def buildBillingAddress(customerDetails: Option[Customer]): JsValue = {
+  private def buildBillingAddress(customerDetails: Option[Customer]): JsValue = {
     BillingAddress.getNextFakeAddress().getJsonRep()
   }
 
   private def buildOrder(customerDetails: Option[Customer], product: Seq[OrderProduct]): JsObject= {
     val defaultContent: Seq[JsField] = List(
+      ("status_id", JsNumber(Random.nextInt(14)+1)),
       ("products",JsArray(product.map(_.getJsonRepresentation()).toVector))
     )
     val fieldsToAdd: Seq[JsField] = customerDetails match {
