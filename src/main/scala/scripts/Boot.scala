@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
+import scripts.api.model.OrderProduct
 import scripts.api.{AkkaHttpClient, BigcommerceApi}
 
 import scala.concurrent.{Await, ExecutionContext}
@@ -31,13 +32,17 @@ object Boot extends App {
   val bcApi = BigcommerceApi(apiUrl, storeHash, client)
 
   import scala.concurrent.duration._
-  val ids = Await.result(bcApi.getAllProductIds(), 300 seconds)
-  println(s" size: ${ids.size}")
-  println(s" ids: $ids")
+//  val orderProduct = OrderProduct("someProd",1,3.0,4.0)
+  val customers = Await.result(bcApi.getAllCustomers(),300 seconds)
+  println(customers.size)
 
-  val customerIds = Await.result(bcApi.getAllCustomerIds(), 300 seconds)
-  println(s"customer size : ${customerIds.size}")
-  println(s"customers : $customerIds")
+//  val ids = Await.result(bcApi.getAllProductIds(), 300 seconds)
+//  println(s" size: ${ids.size}")
+//  println(s" ids: $ids")
+//
+//  val customerIds = Await.result(bcApi.getAllCustomerIds(), 300 seconds)
+//  println(s"customer size : ${customerIds.size}")
+//  println(s"customers : $customerIds")
   val result = system.terminate()
   println("finished exiting")
 }

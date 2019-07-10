@@ -1,8 +1,10 @@
 package scripts.api
 
 import akka.actor.ActorSystem
+import akka.http.javadsl.model.headers.CustomHeader
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Accept, ModeledHeader}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import com.typesafe.scalalogging.LazyLogging
@@ -13,7 +15,8 @@ case class BigcommerceApi(apiBaseUrl: String, storeHash: String, client: HttpCli
                          (implicit ec: ExecutionContext, sys: ActorSystem, mat: ActorMaterializer)
   extends LazyLogging
     with ProductsApi
-    with CustomersV3Api {
+    with CustomersApi
+    with OrdersApi {
 
   /**
     * Append Path is path with slash to be appended.
@@ -53,4 +56,21 @@ case class BigcommerceApi(apiBaseUrl: String, storeHash: String, client: HttpCli
     }
   }
 
+
+  def post(path: String, body: String): Future[String] = {
+    val mediaRange = MediaRange.apply(MediaTypes.`application/json`)
+    val acceptHeader: HttpHeader = Accept(mediaRange)
+    val request = HttpRequest(
+      HttpMethods.POST,
+      baseUrl(Some(path)),
+      headers = collection.immutable.Seq(acceptHeader),
+      entity = HttpEntity(ContentTypes.`application/json`,body.getBytes)
+    )
+    for {
+      body <- client.executeRequest(request)
+      stringBody <- materializeEntity(body)
+    } yield {
+      stringBody._2
+    }
+  }
 }

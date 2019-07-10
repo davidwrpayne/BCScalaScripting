@@ -1,15 +1,12 @@
 package scripts.api
 
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, Uri}
-import akka.stream.{ActorMaterializer, Materializer}
-import akka.util.ByteString
+import akka.stream.Materializer
 import scripts.api.model.Pagination
-import spray.json.{JsArray, JsObject, JsValue}
-import spray.json.lenses._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
+import spray.json.lenses._
 
 import scala.concurrent.{ExecutionContext, Future}
-import spray.json._
 
 trait ProductsApi {
   this: BigcommerceApi =>

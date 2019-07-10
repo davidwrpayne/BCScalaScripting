@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion     := "2.12.0"
+ThisBuild / scalaVersion     := "2.11.0"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.example"
 ThisBuild / organizationName := "example"
@@ -23,12 +23,14 @@ val AkkaHttp = Seq(
 lazy val dependencies = Seq(
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
+    "it.justwrote" %% "scala-faker" % "0.3",
     "net.virtual-void" %% "json-lenses" % "0.6.2",
     "org.json4s" %% "json4s-native" % JSON_4S_VERSION,
     scalaTest % Test
 )
 
 val otherResolvers = Seq(
+  "justwrote" at "http://repo.justwrote.it/releases/",
   "Typesafe Snapshots" at "http://repo.akka.io/snapshots/",
   "Sonotype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
   Resolver.jcenterRepo,
@@ -39,7 +41,9 @@ lazy val root = (project in file("."))
   .settings(
     name := "OrderCreator",
     resolvers ++= otherResolvers,
-    libraryDependencies ++= dependencies ++ AkkaHttp
+    libraryDependencies ++= dependencies ++ AkkaHttp,
+    mainClass in assembly := Some("scripts.Boot")
   )
+
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.

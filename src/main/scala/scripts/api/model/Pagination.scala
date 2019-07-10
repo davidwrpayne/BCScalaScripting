@@ -5,7 +5,6 @@ import spray.json.{JsNumber, JsObject, JsValue}
 
 case class Pagination(count: Int, perPage: Int, currentPage: Int, total: Int, totalPages: Int)
 object Pagination {
-  case class InvalidPaginationJsonException(message: String) extends Exception(message)
   val reader = new Reader[Pagination] {
     override def read(js: JsValue): Validated[Pagination] = {
         js match {
@@ -20,9 +19,9 @@ object Pagination {
                   total = jTotal.toInt
                 ))
               case x =>
-                Left(InvalidPaginationJsonException(s"Unable to deserialize $x"))
+                Left(InvalidModelJsonException(s"Unable to deserialize $x"))
             }
-          case unexpected => Left(InvalidPaginationJsonException(s"Expected JsObject. recieved: $unexpected"))
+          case unexpected => Left(InvalidModelJsonException(s"Expected JsObject. recieved: $unexpected"))
         }
     }
   }
