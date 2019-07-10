@@ -12,15 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import spray.json._
 
 trait ProductsApi {
-  this: Api =>
-
+  this: BigcommerceApi =>
   val productsPath = "/v3/catalog/products"
-
-
-  def getProductResponse()(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
-    getJsonResponse(productsPath)
-  }
-
 
   /**
     * Extraction lenses for json data extraction
@@ -31,38 +24,26 @@ trait ProductsApi {
   private val IdLens: Lens[Seq] = "data" / * / "id"
   private val paginationLens: ScalarLens = "meta" / "pagination"
 
-  private def getJsonResponse(path: String)(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
-    val req = HttpRequest(HttpMethods.GET, baseUrl(Some(productsPath)))
-    client.executeRequest(req)
-      .flatMap(materializeEntity)
-      .map(_._2.parseJson)
-      .map(_.prettyPrint)
+  def getProductPage(page: Int): Future[String] = {
+    getApiPage(productsPath, Some(page))
   }
 
-
-  def getProductPage(page: Int)(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
-    val query = Uri.Query(("page", page.toString))
-    for {
-      body <- client.executeRequest(HttpRequest(uri = baseUrl(Some(productsPath)).withQuery(query)))
-      stringBody <- materializeEntity(body)
-    } yield {
-      stringBody._2
-    }
+  def getProductResponse()(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
+    getProductPage(1)
   }
-
   /**
     * Fetches first page gets count of product pages and parallel fetches them and combines with products returned from current page
     * @param ec
     * @param mat
     * @return
     */
-  def getAllProductIds()(implicit ec: ExecutionContext, mat: Materializer): Future[Seq[Int]] = {
+  def getAllProductIds()(implicit ec: ExecutionContext): Future[Seq[Int]] = {
     for {
-      pageJson <- getProductPage(0)
+      pageJson <- getApiPage(productsPath, None)
       page = pageJson.parseJson
       pagination = page.extract[Pagination](paginationLens)(Pagination.reader)
       productIds = page.extract[Int](IdLens)
-      pagesToFetch = pagination.currentPage + 1 to pagination.totalPages
+      pagesToFetch = if(pagination.currentPage != pagination.totalPages) pagination.currentPage + 1 to pagination.totalPages  else Seq.empty[Int]
       x: Seq[Future[Seq[Int]]] = pagesToFetch.map(getProductPage(_).map(_.parseJson.extract[Int](IdLens)))
       y <- Future.sequence(x).map(_.flatten)
     } yield {
@@ -71,9 +52,9 @@ trait ProductsApi {
   }
 
 
-  def getProductMetaData()(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
+  def getProductMetaData()(implicit ec: ExecutionContext): Future[String] = {
     for {
-      body <- getJsonResponse(productsPath)
+      body <- getProductPage(0)
       json = body.parseJson
       pagination = json.extract[Pagination](paginationLens)(Pagination.reader)
     } yield {

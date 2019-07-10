@@ -35,6 +35,9 @@ object Boot extends App {
   println(s" size: ${ids.size}")
   println(s" ids: $ids")
 
+  val customerIds = Await.result(bcApi.getAllCustomerIds(), 300 seconds)
+  println(s"customer size : ${customerIds.size}")
+  println(s"customers : $customerIds")
   val result = system.terminate()
   println("finished exiting")
 }
