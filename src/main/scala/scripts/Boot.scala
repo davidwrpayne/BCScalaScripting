@@ -31,8 +31,9 @@ object Boot extends App {
   val bcApi = BigcommerceApi(apiUrl, storeHash, client)
 
   import scala.concurrent.duration._
-
-  println(Await.result(bcApi.getProductMetaData(), 10 seconds))
+  val ids = Await.result(bcApi.getAllProductIds(), 300 seconds)
+  println(s" size: ${ids.size}")
+  println(s" ids: $ids")
 
   val result = system.terminate()
   println("finished exiting")

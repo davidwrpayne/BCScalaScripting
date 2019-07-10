@@ -17,15 +17,6 @@ trait ProductsApi {
   val productsPath = "/v3/catalog/products"
 
 
-  def materializeEntity(resp: HttpResponse)(implicit ec: ExecutionContext, mat: Materializer): Future[(HttpResponse, String)] = {
-    for {
-      body <- resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _)
-    } yield {
-      (resp, body.utf8String)
-    }
-  }
-
-
   def getProductResponse()(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
     getJsonResponse(productsPath)
   }
@@ -37,16 +28,8 @@ trait ProductsApi {
 
   import spray.json.lenses.JsonLenses._
 
-  private val MetaLens: ScalarLens = strToField("meta")
   private val IdLens: Lens[Seq] = "data" / * / "id"
-  private val totalPagesLens: Lens[Id] = "meta" / "pagination" / "total_pages"
   private val paginationLens: ScalarLens = "meta" / "pagination"
-
-  def getProducts[T](transform: JsValue => Seq[T])
-                    (implicit ec: ExecutionContext, mat: Materializer): (Seq[T], JsObject) = {
-    //    client.executeRequest()
-    ???
-  }
 
   private def getJsonResponse(path: String)(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
     val req = HttpRequest(HttpMethods.GET, baseUrl(Some(productsPath)))
@@ -56,20 +39,36 @@ trait ProductsApi {
       .map(_.prettyPrint)
   }
 
-//
-//  def getAllProductIds()(implicit ec: ExecutionContext, mat: Materializer): Future[Seq[Int]] = {
-//    val req = HttpRequest(HttpMethods.GET, baseUrl(Some(productsPath)))
-//    for {
-//      (_, body) <- client.executeRequest(req).flatMap(materializeEntity)
-//      s = body.parseJson
-//    } yield {
-//      s.asJsObject().getFields("data").headOption match {
-//        case Some(value: JsArray) =>
-//          value.elements.flatMap(_.asJsObject.getFields("id").map(_.convertTo[Int]))
-//        case _ => Seq.empty[Int]
-//      }
-//    }
-//  }
+
+  def getProductPage(page: Int)(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
+    val query = Uri.Query(("page", page.toString))
+    for {
+      body <- client.executeRequest(HttpRequest(uri = baseUrl(Some(productsPath)).withQuery(query)))
+      stringBody <- materializeEntity(body)
+    } yield {
+      stringBody._2
+    }
+  }
+
+  /**
+    * Fetches first page gets count of product pages and parallel fetches them and combines with products returned from current page
+    * @param ec
+    * @param mat
+    * @return
+    */
+  def getAllProductIds()(implicit ec: ExecutionContext, mat: Materializer): Future[Seq[Int]] = {
+    for {
+      pageJson <- getProductPage(0)
+      page = pageJson.parseJson
+      pagination = page.extract[Pagination](paginationLens)(Pagination.reader)
+      productIds = page.extract[Int](IdLens)
+      pagesToFetch = pagination.currentPage + 1 to pagination.totalPages
+      x: Seq[Future[Seq[Int]]] = pagesToFetch.map(getProductPage(_).map(_.parseJson.extract[Int](IdLens)))
+      y <- Future.sequence(x).map(_.flatten)
+    } yield {
+      y ++ productIds
+    }
+  }
 
 
   def getProductMetaData()(implicit ec: ExecutionContext, mat: Materializer): Future[String] = {
