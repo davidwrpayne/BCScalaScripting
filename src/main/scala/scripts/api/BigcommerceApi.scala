@@ -39,6 +39,9 @@ case class BigcommerceApi(apiBaseUrl: String, storeHash: String, client: HttpCli
     }
   }
 
+  val mediaRange = MediaRange.apply(MediaTypes.`application/json`)
+  val acceptHeader: HttpHeader = Accept(mediaRange)
+
   def getApiPage(path: String, page: Option[Int]): Future[String] = {
     val uri = baseUrl(Some(path))
     val modURI = page match {
@@ -47,7 +50,10 @@ case class BigcommerceApi(apiBaseUrl: String, storeHash: String, client: HttpCli
       case None =>
         uri
     }
-    val request = HttpRequest(uri = modURI)
+    val request = HttpRequest(
+      uri = modURI,
+      headers = collection.immutable.Seq(acceptHeader)
+    )
     for {
       body <- client.executeRequest(request)
       stringBody <- materializeEntity(body)
@@ -57,14 +63,12 @@ case class BigcommerceApi(apiBaseUrl: String, storeHash: String, client: HttpCli
   }
 
 
-  def post(path: String, body: String): Future[String] = {
-    val mediaRange = MediaRange.apply(MediaTypes.`application/json`)
-    val acceptHeader: HttpHeader = Accept(mediaRange)
+  def executePost(path: String, body: String): Future[String] = {
     val request = HttpRequest(
       HttpMethods.POST,
       baseUrl(Some(path)),
       headers = collection.immutable.Seq(acceptHeader),
-      entity = HttpEntity(ContentTypes.`application/json`,body.getBytes)
+      entity = HttpEntity(ContentTypes.`application/json`, body.getBytes)
     )
     for {
       body <- client.executeRequest(request)

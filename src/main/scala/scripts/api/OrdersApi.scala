@@ -17,24 +17,24 @@ trait OrdersApi {
   val ordersApiPath = "/v2/orders"
 
   val idLens = strToField("id")
-
-//  def updateOrderStatus(orderId: Int, status: Int):Future[Unit] = {
-//    put(s"$ordersApiPath/$orderId",update)
-//  }
+  private val paginationLens = "meta" / "pagination"
+  //  def updateOrderStatus(orderId: Int, status: Int):Future[Unit] = {
+  //    put(s"$ordersApiPath/$orderId",update)
+  //  }
 
   /**
     * returns id of order created
     *
     * @return
     */
-  def createOrder(customerDetails: Option[Customer], orderProducts: OrderProduct)(implicit ec: ExecutionContext): Future[Int]= {
+  def createOrder(customerDetails: Option[Customer], orderProducts: OrderProduct)(implicit ec: ExecutionContext): Future[Int] = {
 
     val newOrder = buildOrder(customerDetails, Seq(orderProducts))
 
     for {
-      orderResponse <- post(ordersApiPath, newOrder.toString)
+      orderResponse <- executePost(ordersApiPath, newOrder.toString)
       orderId = orderResponse.extract[Int](idLens)
-//      _ <- updateOrderStatus(orderId, Random.nextInt(14)+1)
+      //      _ <- updateOrderStatus(orderId, Random.nextInt(14)+1)
     } yield {
       orderId
     }
@@ -44,15 +44,15 @@ trait OrdersApi {
     BillingAddress.getNextFakeAddress().getJsonRep()
   }
 
-  private def buildOrder(customerDetails: Option[Customer], product: Seq[OrderProduct]): JsObject= {
+  private def buildOrder(customerDetails: Option[Customer], product: Seq[OrderProduct]): JsObject = {
     val defaultContent: Seq[JsField] = List(
-      ("status_id", JsNumber(Random.nextInt(14)+1)),
-      ("products",JsArray(product.map(_.getJsonRepresentation()).toVector))
+      ("status_id", JsNumber(Random.nextInt(14) + 1)),
+      ("products", JsArray(product.map(_.getJsonRepresentation()).toVector))
     )
     val fieldsToAdd: Seq[JsField] = customerDetails match {
-      case Some(Customer(None,_,_,_)) =>
+      case Some(Customer(None, _, _, _)) =>
         throw new Exception("provide a customer with an id if your trying to attach an order to a customer")
-      case Some(Customer(Some(id),_,_,_)) =>
+      case Some(Customer(Some(id), _, _, _)) =>
         List(
           ("customer_id", JsNumber(id)),
           ("billing_address", buildBillingAddress(customerDetails))
@@ -60,6 +60,20 @@ trait OrdersApi {
       case None =>
         List(("billing_address", buildBillingAddress(None)))
     }
-    JsObject(defaultContent ++ fieldsToAdd:_*)
+    JsObject(defaultContent ++ fieldsToAdd: _*)
+  }
+
+
+  def getAllOrderJson()(implicit ec: ExecutionContext): Future[Seq[JsObject]] = {
+      for {
+        orderBody <- getApiPage(ordersApiPath,None)
+        json = orderBody
+        _ = println(orderBody)
+//        jsonPagination = pri
+//        _ = println(jsonPagination)
+//        pagination = json.extract[Pagination](paginationLens)(Pagination.reader)
+      } yield {
+        Seq.empty
+      }
   }
 }
