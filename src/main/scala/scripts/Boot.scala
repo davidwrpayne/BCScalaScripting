@@ -24,14 +24,13 @@ object Boot extends App with LazyLogging {
   
 
   val defaultApiUrl = "https://api.bigcommerce.com"
-
   val AuthClientIdHeader = "X-Auth-Client"
   val AuthTokenHeader = "X-Auth-Token"
   val FILE_LOCATION = "./.argument-config"
 
 
 
-  val lastArgs: PossiblePromptResponse = readLastArguments()
+  val lastArgs: LastPromptResponses = readLastArguments()
   val arguments = promptForInput(lastArgs)
   writeLastArguments(arguments)
   runStoreScript(arguments)
@@ -58,7 +57,7 @@ object Boot extends App with LazyLogging {
     writer.close()
   }
 
-  def readLastArguments(fileLocation: String = FILE_LOCATION): PossiblePromptResponse = {
+  def readLastArguments(fileLocation: String = FILE_LOCATION): LastPromptResponses = {
     if (scala.reflect.io.File(fileLocation).exists ) {
       val source = Source.fromFile(fileLocation)
       val lines = for {
@@ -67,7 +66,7 @@ object Boot extends App with LazyLogging {
       } yield { (splits.headOption,splits.lastOption) }
       val definedLines: Map[String, Option[String]] = lines.collect({case (Some(key),Some(value)) => (key,Some(value))}).toMap
       source.close()
-      PossiblePromptResponse(
+      LastPromptResponses(
         token = definedLines.getOrElse[Option[String]]("access_token", None),
         id = definedLines.getOrElse[Option[String]]("client_id", None),
         storeHash = definedLines.getOrElse[Option[String]]("store_hash", None),
@@ -75,14 +74,14 @@ object Boot extends App with LazyLogging {
         createOrdersArguments = definedLines.getOrElse[Option[String]]("create_orders", None)
       )
     } else {
-      PossiblePromptResponse()
+      LastPromptResponses()
     }
   }
 
 
   case class PromptResponse(token: String, id: String, storeHash: String, apiUrl: String, createOrders: Boolean)
 
-  case class PossiblePromptResponse(
+  case class LastPromptResponses(
                                      token: Option[String] = None,
                                      id: Option[String] = None,
                                      storeHash: Option[String] = None,
@@ -99,16 +98,24 @@ object Boot extends App with LazyLogging {
     }
   }
 
-  private def promptForInput(possiblePromptResponse: PossiblePromptResponse): PromptResponse = {
+  private def promptForInput(possiblePromptResponse: LastPromptResponses): PromptResponse = {
     PromptResponse(
-      apiUrl = promptUser("Enter Api Url [%s]:", Some(possiblePromptResponse.apiUrl.getOrElse(defaultApiUrl))),
-      token = promptUser("Enter Access Token [%s]:", possiblePromptResponse.token),
+      apiUrl = promptUser("Enter Base Api Url [%s]:", Some(possiblePromptResponse.apiUrl.getOrElse(defaultApiUrl))),
       storeHash = promptUser("Enter StoreHash [%s]:", possiblePromptResponse.storeHash),
+      token = promptUser("Enter Access Token [%s]:", possiblePromptResponse.token),
       id = promptUser("Enter Client Id [%s]:", possiblePromptResponse.id),
       createOrders = promptUser("create Orders [%s]:", Some(possiblePromptResponse.createOrdersArguments.getOrElse("false"))).trim.toLowerCase == "true"
     )
   }
 
+  /**
+    * Unfortunately this only creates orders 1 at a time. I've run into issues with kicking off all the requests
+    * as akka seems to have a default limit of 32 outbound requests? Need to kick off the requests in batches probably
+    * @param bcApi
+    * @param customers
+    * @param products
+    * @return
+    */
   private def createOrders(bcApi: BigcommerceApi, customers: Seq[Customer], products: Seq[model.Product]): Future[Seq[Option[Int]]] = {
     val percentOfCustomers: Double = .80
     val percentOfProducts: Double = .8
@@ -150,6 +157,8 @@ object Boot extends App with LazyLogging {
 
     var customers: Seq[Customer] = Seq.empty[Customer]
     var products: Seq[model.Product] = Seq.empty[model.Product]
+
+    /** For scripting purposes I'll await results but should try and find a better way to handle this **/
     customers = Await.result(bcApi.getAllCustomers(), 300 seconds)
     products = Await.result(bcApi.getAllProducts(), 300 seconds)
 

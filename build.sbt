@@ -2,8 +2,6 @@ import Dependencies._
 
 ThisBuild / scalaVersion     := "2.11.0"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
-ThisBuild / organization     := "com.example"
-ThisBuild / organizationName := "example"
 
 val AKKA_VERSION: String = "2.5.23"
 val AKKA_HTTP_VERSION: String = "10.1.8"
