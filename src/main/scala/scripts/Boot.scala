@@ -18,7 +18,7 @@ import scala.io.Source
 
 object Boot extends App with LazyLogging {
 
-  implicit val system: ActorSystem = ActorSystem("OrderCreatorActorSystem")
+  implicit val system: ActorSystem = ActorSystem("ScriptingSystem")
   implicit val ec: ExecutionContext = system.dispatcher
   implicit val mat: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(system))
   

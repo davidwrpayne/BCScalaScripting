@@ -37,7 +37,7 @@ val otherResolvers = Seq(
 
 lazy val root = (project in file("."))
   .settings(
-    name := "OrderCreator",
+    name := "BCScalaScripting",
     resolvers ++= otherResolvers,
     libraryDependencies ++= dependencies ++ AkkaHttp,
     mainClass in assembly := Some("scripts.Boot")
