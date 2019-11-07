@@ -16,9 +16,10 @@ case class BigcommerceApi(apiBaseUrl: String, storeHash: String, client: HttpCli
   extends LazyLogging
     with ProductsApi
     with CustomersApi
-    with OrdersApi {
+    with OrdersApi
+    with BlogPostsApi {
 
-  /**
+  /**U
     * Append Path is path with slash to be appended.
     *
     * @param appendPath
